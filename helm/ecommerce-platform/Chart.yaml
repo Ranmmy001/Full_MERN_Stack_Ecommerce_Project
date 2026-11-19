@@ -1,0 +1,17 @@
+apiVersion: v2
+name: ecommerce-platform
+description: Helm chart for the MERN Ecommerce DevOps Capstone Project
+type: application
+version: 0.1.0
+appVersion: "1.0.0"
+
+
+
+
+# Purpose of Chart.yaml:
+# - apiVersion: v2: Identifies the Helm chart format.
+# - name: Names the chart.
+# - description: Describes the application.
+# - type: application: Identifies it as an application chart.
+# - version: Version of the Helm chart itself.
+# - appVersion: Version of the application being packaged.

@@ -1,0 +1,93 @@
+# ==========================================
+# MINIKUBE ENVIRONMENT CONFIGURATION
+# ==========================================
+
+global:
+  imagePullPolicy: IfNotPresent
+
+
+# ==========================================
+# FRONTEND
+# ==========================================
+
+frontend:
+  image:
+    repository: full_mern_stack_ecommerce_project_1-frontend
+    tag: latest
+
+  service:
+    type: NodePort
+    nodePort: 30080
+
+
+# ==========================================
+# ADMIN
+# ==========================================
+
+admin:
+  image:
+    repository: full_mern_stack_ecommerce_project_1-admin
+    tag: latest
+
+  service:
+    type: NodePort
+    nodePort: 30081
+
+
+# ==========================================
+# BACKEND
+# ==========================================
+
+backend:
+  image:
+    repository: full_mern_stack_ecommerce_project_1-backend
+    tag: latest
+
+  service:
+    type: NodePort
+    nodePort: 30050
+
+
+# ==========================================
+# AUDIT SERVICE
+# ==========================================
+
+auditService:
+  image:
+    repository: full_mern_stack_ecommerce_project_1-audit-service
+    tag: latest
+
+
+# ==========================================
+# DATABASE IMAGES
+# ==========================================
+
+mongodb:
+  image:
+    repository: mongo
+    tag: "7"
+
+postgres:
+  image:
+    repository: postgres
+    tag: "16"
+
+flyway:
+  image:
+    repository: flyway/flyway
+    tag: "11"
+
+
+
+
+
+
+
+#      Understand this configuration
+#  telling Helm:
+# 1. Use locally available application images.
+# 2. Keep the existing NodePort assignments.
+# 3. Use MongoDB 7.
+# 4. Use PostgreSQL 16.
+# 5. Use Flyway 11.
+# 6. Use IfNotPresent for image pulling.

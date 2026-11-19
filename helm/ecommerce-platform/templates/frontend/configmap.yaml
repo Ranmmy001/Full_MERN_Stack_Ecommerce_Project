@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: ConfigMap  ## important: This ConfigMap is used to store environment variables for the frontend application. It allows for easy configuration management and separation of concerns between code and configuration.
+metadata:
+  name: frontend-config
+  namespace: {{ .Values.global.namespaces.frontend }}
+data:
+  APP_ENV: {{ .Values.frontend.config.APP_ENV | quote }}

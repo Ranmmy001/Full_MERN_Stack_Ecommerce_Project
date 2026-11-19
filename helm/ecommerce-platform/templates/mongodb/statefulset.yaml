@@ -1,0 +1,69 @@
+apiVersion: apps/v1
+kind: StatefulSet   ## purpose: This StatefulSet manages the deployment and scaling of a set of MongoDB pods, providing stable network identities and persistent storage for each pod. It ensures that each MongoDB instance maintains its state across restarts and rescheduling, which is crucial for database applications that require data persistence and consistency.
+metadata:
+  name: mongodb
+  namespace: {{ .Values.global.namespaces.mongodb }}
+spec:
+  serviceName: {{ .Values.mongodb.service.name }}
+  replicas: {{ .Values.mongodb.replicas }}
+  selector:
+    matchLabels:
+      app: mongodb
+  template:
+    metadata:
+      labels:
+        app: mongodb
+    spec:
+      containers:
+        - name: mongodb
+          image: "{{ .Values.mongodb.image.repository }}:{{ .Values.mongodb.image.tag }}"
+          imagePullPolicy: {{ .Values.global.imagePullPolicy }}
+          ports:
+            - name: mongodb
+              containerPort: 27017
+              protocol: TCP
+
+          envFrom:
+            - configMapRef:
+                name: mongodb-config
+
+          env:
+            - name: MONGO_INITDB_ROOT_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.mongodb.existingSecret }}
+                  key: MONGO_INITDB_ROOT_USERNAME
+
+            - name: MONGO_INITDB_ROOT_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.mongodb.existingSecret }}
+                  key: MONGO_INITDB_ROOT_PASSWORD
+
+          volumeMounts:   ## purpose: This section defines the volume mounts for the MongoDB container, specifying where the persistent storage will be mounted inside the container. It ensures that the MongoDB data is stored in a persistent volume, allowing data to survive pod restarts and rescheduling.
+            - name: mongodb-data
+              mountPath: /data/db   ## purpose: This specifies the directory inside the MongoDB container where the database files will be stored. By mounting the persistent volume at this path, we ensure that MongoDB can read and write its data to a location that persists across pod restarts and rescheduling.
+
+  volumeClaimTemplates:
+    - metadata:
+        name: mongodb-data
+      spec:
+        accessModes:
+          - {{ .Values.mongodb.persistence.accessMode }}
+        resources:
+          requests:
+            storage: {{ .Values.mongodb.persistence.size }}
+
+
+
+
+
+
+
+
+# this StatefulSet:
+# - Uses MongoDB 7.
+# - Runs one MongoDB replica.
+# - Reads root credentials from mongodb-secret.
+# - Mounts persistent storage at /data/db.
+# - Requests a 5Gi PersistentVolumeClaim.

@@ -1,0 +1,29 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: admin
+spec:
+  replicas: 2
+
+  selector:
+    matchLabels:
+      app: admin
+
+  template:
+    metadata:
+      labels:
+        app: admin
+
+    spec:
+      containers:
+        - name: admin
+          image: full_mern_stack_ecommerce_project_1-admin:latest
+          imagePullPolicy: IfNotPresent 
+
+          ports:
+            - name: http
+              containerPort: 80
+
+          envFrom:
+            - configMapRef:
+                name: admin-config

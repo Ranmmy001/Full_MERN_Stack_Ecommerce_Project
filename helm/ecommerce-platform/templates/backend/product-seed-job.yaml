@@ -1,0 +1,29 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: product-seed-job
+  namespace: {{ .Values.global.namespaces.backend }}
+  annotations:              ## purpose: These annotations define the Helm hooks for the job, specifying when the job should be executed and how it should be managed. The post-install and post-upgrade hooks ensure that the job runs after the Helm chart is installed or upgraded, while the hook-delete-policy ensures that the job is deleted before a new hook is created or after it has succeeded.
+    helm.sh/hook: post-install,post-upgrade            ## purpose: This annotation specifies that the job should be executed after the Helm chart is installed or upgraded, ensuring that the product seeding process runs at the appropriate time in the deployment lifecycle. 
+    helm.sh/hook-delete-policy: before-hook-creation,hook-succeeded         ## purpose: This annotation defines the deletion policy for the job, ensuring that it is deleted before a new hook is created or after it has succeeded. It helps maintain a clean state in the cluster by removing completed or outdated jobs.
+spec:
+  backoffLimit: 3           ## purpose: This backoff limit specifies the number of retries for the job in case of failure. It allows the job to be retried up to 3 times before being marked as failed, providing resilience against transient issues during the product seeding process.
+  template:
+    metadata:
+      labels:
+        app: product-seed-job
+    spec:
+      restartPolicy: OnFailure
+      containers:
+        - name: product-seed
+          image: "{{ .Values.backend.image.repository }}:{{ .Values.backend.image.tag }}"
+          imagePullPolicy: {{ .Values.global.imagePullPolicy }}
+          command:
+            - /bin/sh
+            - -c            ## purpose: This command specifies that the container will execute a shell command, allowing for the execution of multiple commands in sequence. It enables the product seeding process to run multiple scripts in a single job.
+            - |                
+              node seed/add-sample-products.js &&
+              node seed/add-more-products.js
+          envFrom:
+            - secretRef:
+                name: {{ .Values.backend.existingSecret }}

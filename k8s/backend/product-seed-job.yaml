@@ -1,0 +1,30 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: product-seed-job
+  namespace: backend-ns
+spec:
+  backoffLimit: 2     ## Number of retries before marking the job as failed
+  ttlSecondsAfterFinished: 86400    ## Cleans up the completed Job after 24 hours
+  template:
+    metadata:
+      labels:
+        app: product-seed
+    spec:
+      restartPolicy: Never  ## Ensures the job doesn't restart on failure
+      containers:
+        - name: product-seeder
+          image: full_mern_stack_ecommerce_project_1-backend:latest
+          imagePullPolicy: IfNotPresent
+          command:
+            - /bin/sh
+            - -c
+            - |
+              node seed/add-sample-products.js &&
+              node seed/add-more-products.js
+          env:
+            - name: MONGODB_URL
+              valueFrom:
+                secretKeyRef:
+                  name: backend-secret
+                  key: MONGODB_URL

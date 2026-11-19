@@ -1,0 +1,139 @@
+# ==========================================
+# Node.js dependencies
+# ==========================================
+node_modules/
+**/node_modules/
+
+# ==========================================
+# Build outputs
+# ==========================================
+build/
+dist/
+coverage/
+**/build/
+**/dist/
+**/coverage/
+
+# ==========================================
+# Environment files and secrets
+# ==========================================
+.env
+.env.*
+**/.env
+**/.env.*
+!.env.example
+!**/.env.example
+
+# SSH private keys and local SSH files
+id_rsa
+id_rsa.*
+id_ed25519
+id_ed25519.*
+*.pem
+*.ppk
+*.key
+
+# Git-secret local random seed
+.gitsecret/keys/random_seed
+
+# ==========================================
+# Terraform sensitive files
+# ==========================================
+.terraform/
+**/.terraform/
+
+*.tfstate
+*.tfstate.*
+*.tfvars
+*.tfvars.*
+!*.tfvars.example
+
+crash.log
+crash.*.log
+
+# Terraform plan artifacts
+*.tfplan
+tfplan
+tfplan.*
+**/tfplan
+**/tfplan.*
+
+# Infracost generated files
+infracost*.json
+**/infracost*.json
+
+# ==========================================
+# Kubernetes secrets and local credentials
+# ==========================================
+**/secret.yaml
+**/secret.yml
+**/secrets.yaml
+**/secrets.yml
+**/*-secret.yaml
+**/*-secret.yml
+
+.kube/
+.kubeconfig
+kubeconfig
+kubeconfig.*
+
+# ==========================================
+# Docker local overrides
+# ==========================================
+docker-compose.override.yml
+
+# ==========================================
+# Logs and temporary files
+# ==========================================
+*.log
+npm-debug.log*
+yarn-debug.log*
+pnpm-debug.log*
+tmp/
+temp/
+.cache/
+
+# ==========================================
+# Local databases and data
+# ==========================================
+*.sqlite
+*.sqlite3
+*.db
+
+# ==========================================
+# Helm generated packages
+# ==========================================
+*.tgz
+
+# ==========================================
+# Operating system files
+# ==========================================
+.DS_Store
+Thumbs.db
+
+# ==========================================
+# IDE and editor files
+# ==========================================
+.idea/
+*.swp
+*.swo
+*~
+
+# ==========================================
+# Test and coverage outputs
+# ==========================================
+.nyc_output/
+
+note
+# ==========================================
+# Personal project notes and planning
+# ==========================================
+PROJECT-ROADMAP.txt
+PROJECT-NOTES.txt
+PERSONAL-NOTES.txt
+LEARNING-NOTES.txt
+TODO-PERSONAL.txt
+SUMMARY
+
+id_rsa
+id_rsa.pub

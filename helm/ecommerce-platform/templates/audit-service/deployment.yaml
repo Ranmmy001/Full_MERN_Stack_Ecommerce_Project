@@ -1,0 +1,34 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: audit-service
+  namespace: {{ .Values.global.namespaces.audit }}
+spec:
+  replicas: {{ .Values.auditService.replicas }}
+  selector:
+    matchLabels:
+      app: audit-service
+  template:
+    metadata:
+      labels:
+        app: audit-service
+    spec:
+      containers:
+        - name: audit-service
+          image: "{{ .Values.auditService.image.repository }}:{{ .Values.auditService.image.tag }}"
+          imagePullPolicy: {{ .Values.global.imagePullPolicy }}
+          ports:
+            - name: http
+              containerPort: 5001
+              protocol: TCP
+          envFrom:
+            - configMapRef:
+                name: audit-service-config
+            - secretRef:
+                name: {{ .Values.auditService.existingSecret }}
+          readinessProbe:   ## purpose: This readiness probe checks if the audit service is ready to accept traffic. It uses an HTTP GET request to the /health endpoint on port 5001, allowing Kubernetes to determine if the service is fully initialized and ready to handle requests.
+            httpGet:         ## purpose: This specifies that the readiness probe will use an HTTP GET request to check the health of the audit service. It allows Kubernetes to verify that the service is responsive and ready to serve traffic.
+              path: /health     ## purpose: This is the endpoint that the readiness probe will query to check the health of the audit service. It should return a successful response when the service is ready to handle requests.
+              port: 5001
+            initialDelaySeconds: 10        ## purpose: This delay allows the audit service to initialize before the readiness probe starts checking its health. It prevents premature failure of the probe during the service's startup phase.
+            periodSeconds: 10               ## purpose: This specifies how often the readiness probe will check the health of the audit service. It ensures that Kubernetes continuously monitors the service's readiness at regular intervals.

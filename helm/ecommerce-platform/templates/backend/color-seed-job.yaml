@@ -1,0 +1,41 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: color-seed-job
+  namespace: {{ .Values.global.namespaces.backend }}
+  annotations:          ## purpose: These annotations define the Helm hooks for the job, specifying when the job should be executed and how it should be managed. The post-install and post-upgrade hooks ensure that the job runs after the Helm chart is installed or upgraded, while the hook-delete-policy ensures that the job is deleted before a new hook is created or after it has succeeded.
+    helm.sh/hook: post-install,post-upgrade             ## purpose: This annotation specifies that the job should be executed after the Helm chart is installed or upgraded, ensuring that the color seeding process runs at the appropriate time in the deployment lifecycle.
+    helm.sh/hook-delete-policy: before-hook-creation,hook-succeeded         ## purpose: This annotation defines the deletion policy for the job, ensuring that it is deleted before a new hook is created or after it has succeeded. It helps maintain a clean state in the cluster by removing completed or outdated jobs.     
+spec:
+  backoffLimit: 3
+  template:
+    metadata:
+      labels:
+        app: color-seed-job
+    spec:
+      restartPolicy: OnFailure
+      containers:
+        - name: color-seed
+          image: "{{ .Values.backend.image.repository }}:{{ .Values.backend.image.tag }}"
+          imagePullPolicy: {{ .Values.global.imagePullPolicy }}
+          command:
+            - node
+            - seed/seed-colors.js
+          envFrom:
+            - secretRef:
+                name: {{ .Values.backend.existingSecret }}          ### purpose: This environment variable reference allows the color-seed job to access sensitive information, such as database credentials, from the specified Kubernetes secret. It ensures that the job can securely connect to the backend services and perform the color seeding operation without exposing sensitive data in the job definition.
+
+
+
+
+
+
+
+# What this does:
+# - Uses your Backend Docker image.
+# - Runs node seed/seed-colors.js.
+# - Reads MONGODB_URL from backend-secret.
+# - Runs after Helm installation or upgrade.
+# - Deletes the successful Job before the next run, avoiding immutable Job conflicts during upgrades.
+
+

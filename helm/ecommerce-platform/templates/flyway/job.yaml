@@ -1,0 +1,65 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: flyway-migration
+  namespace: {{ .Values.global.namespaces.postgres }}
+spec:
+  backoffLimit: 5     ## purpose: This backoff limit specifies the number of retries for the job in case of failure. It allows the job to be retried up to 5 times before being marked as failed, providing resilience against transient issues during the migration process.
+  template:
+    metadata:
+      labels:
+        app: flyway-migration
+    spec:
+      restartPolicy: OnFailure    ## purpose: This restart policy ensures that the job will be retried if it fails, allowing for transient issues to be resolved without manual intervention. It helps maintain the reliability of the migration process by automatically attempting to complete the migration in case of temporary failures.
+      containers:
+        - name: flyway
+          image: "{{ .Values.flyway.image.repository }}:{{ .Values.flyway.image.tag }}"
+          imagePullPolicy: {{ .Values.global.imagePullPolicy }}
+          args:
+            - migrate    ## purpose: This argument tells Flyway to perform the database migration, applying any pending migration scripts to bring the database schema up to date. It ensures that the database structure is consistent with the application's expectations.
+          env:
+            - name: FLYWAY_URL
+              value: {{ .Values.flyway.config.url | quote }}
+            - name: FLYWAY_USER
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.postgres.existingSecret }}
+                  key: POSTGRES_USER
+            - name: FLYWAY_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.postgres.existingSecret }}
+                  key: POSTGRES_PASSWORD
+            - name: FLYWAY_LOCATIONS     ## purpose: This environment variable specifies the location of the migration scripts for Flyway. It tells Flyway where to find the SQL files that define the database schema changes, allowing it to apply the necessary migrations to the database.
+              value: {{ .Values.flyway.config.locations | quote }}
+          volumeMounts:
+            - name: flyway-migrations
+              mountPath: /flyway/sql   ## purpose: This mount path specifies where the Flyway container will access the migration scripts. By mounting the ConfigMap containing the SQL files at this path, Flyway can read and execute the migration scripts during the migration process.
+      volumes:
+        - name: flyway-migrations
+          configMap:
+            name: flyway-migrations
+
+
+
+
+
+
+
+
+
+
+# Create the Flyway Job
+# This Job will:
+# 1. Wait for PostgreSQL to become available.
+# 2. Connect to the ecommerce_audit database.
+# 3. Read the SQL migration from the flyway-migrations ConfigMap.
+# 4. Apply the migration to PostgreSQL.
+# 5. Exit after successful execution.
+
+# Important explanation
+# - Flyway runs in postgres-ns.
+# - It uses the PostgreSQL credentials from postgres-secret.
+# - The SQL file is mounted at /flyway/sql.
+# - args: migrate tells Flyway to execute pending migrations.
+# - backoffLimit: 5 allows Kubernetes to retry failed Job attempts.

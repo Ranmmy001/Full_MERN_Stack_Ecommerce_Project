@@ -1,0 +1,78 @@
+# ==========================================
+# AWS EKS ENVIRONMENT CONFIGURATION
+# ==========================================
+
+global:
+  imagePullPolicy: IfNotPresent
+
+
+# ==========================================
+# FRONTEND
+# ==========================================
+
+frontend:
+  image:
+    repository: YOUR_AWS_ACCOUNT_ID.dkr.ecr.us-east-1.amazonaws.com/mern-ecommerce/frontend
+    tag: latest
+
+  service:
+    type: ClusterIP
+    nodePort: null
+
+
+# ==========================================
+# ADMIN
+# ==========================================
+
+admin:
+  image:
+    repository: YOUR_AWS_ACCOUNT_ID.dkr.ecr.us-east-1.amazonaws.com/mern-ecommerce/admin
+    tag: latest
+
+  service:
+    type: ClusterIP
+    nodePort: null
+
+
+# ==========================================
+# BACKEND
+# ==========================================
+
+backend:
+  image:
+    repository: YOUR_AWS_ACCOUNT_ID.dkr.ecr.us-east-1.amazonaws.com/mern-ecommerce/backend
+    tag: latest
+
+  service:
+    type: ClusterIP
+    nodePort: null
+
+
+# ==========================================
+# AUDIT SERVICE
+# ==========================================
+
+auditService:
+  image:
+    repository: YOUR_AWS_ACCOUNT_ID.dkr.ecr.us-east-1.amazonaws.com/mern-ecommerce/audit-service
+    tag: latest
+
+
+# ==========================================
+# DATABASE IMAGES
+# ==========================================
+
+mongodb:
+  image:
+    repository: mongo
+    tag: "7"
+
+postgres:
+  image:
+    repository: postgres
+    tag: "16"
+
+flyway:
+  image:
+    repository: flyway/flyway
+    tag: "11"

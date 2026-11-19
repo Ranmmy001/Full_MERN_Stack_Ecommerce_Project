@@ -1,0 +1,34 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: color-seed-job
+  namespace: backend-ns
+
+spec:
+  backoffLimit: 5
+
+  template:
+    metadata:
+      labels:
+        app: color-seed-job
+
+    spec:
+      restartPolicy: Never
+
+      containers:
+        - name: color-seeder
+
+          image: full_mern_stack_ecommerce_project_1-backend:latest
+
+          imagePullPolicy: IfNotPresent
+
+          command:
+            - node
+            - seed/seed-colors.js
+
+          envFrom:
+            - configMapRef:
+                name: backend-config
+
+            - secretRef:
+                name: backend-secret

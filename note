@@ -1,0 +1,275 @@
+4j4Of5aSp2qTJH04
+olaranmmy_db_user
+mongodb+srv://olaranmmy_db_user:4j4Of5aSp2qTJH04@cluster0.mha5l7e.mongodb.net/?appName=Cluster0
+
+
+
+MERN E-commerce DevOps Capstone: Project Roadmap
+1. Where we are now
+Your project has three main application components and a database:
+Component	Purpose	Current status
+Backend	Handles API requests, authentication, and business logic	Running in Docker
+Frontend	Customer-facing e-commerce website	Running in Docker
+Admin	Dashboard for managing the store	Running; Admin login successful
+MongoDB	Stores users, products, and other application data	Running in Docker
+
+
+We have also configured Docker Compose to run these components together, fixed the Admin Nginx configuration so React routes work correctly, and created an Admin account in the local database.
+
+One important detail: The local MongoDB database was empty when we last checked it. Although the Admin login now works, we still need to verify the application's features and decide whether to migrate existing data or populate the local database with test data.
+
+Our next objective is to establish that the application works correctly before introducing Kubernetes and AWS infrastructure.
+2. The next stage: Test the complete application locally
+Purpose: Confirm that the application works correctly before deploying it to Kubernetes.
+
+We have confirmed that the containers start and that Admin authentication works. However, we have not yet verified the complete customer and administrator workflows.
+What we will do
+1. Open the customer-facing website and verify that it loads.
+2. Test customer registration and login.
+3. Verify that the backend API responds correctly.
+4. Test the Admin dashboard and its main features.
+5. Verify that products can be created, displayed, and managed.
+6. Confirm that MongoDB stores the data correctly.
+7. Check that the application can communicate with the backend and database.
+Expected result: The three application services and database work together, and we understand any remaining application-level problems.
+
+We will also decide whether to restore existing database data or populate the local database with test data.
+3. Prepare the application for different environments
+Purpose: Make the same application usable locally, on Minikube, and eventually on AWS without repeatedly changing source code.
+
+We want to avoid a situation where the application works on your laptop but breaks when deployed to AWS because it uses the wrong API URL or database address.
+What we will do
+- Review how the frontend and Admin obtain their backend API URLs.
+- Separate development settings from deployment settings.
+- Review how database connection strings and credentials are supplied.
+- Ensure secrets are not committed to GitHub.
+- Confirm that Docker images can be built consistently.
+Expected result: The application can be configured for different environments without unnecessary changes to its source code.
+
+This is particularly important because Create React App embeds environment variables into the frontend during the build process.
+4. Deploy the application to Minikube
+Purpose: Learn and test Kubernetes deployment locally before paying for AWS infrastructure.
+
+We will take the application that currently runs through Docker Compose and deploy it to Kubernetes.
+What we will do
+1. Prepare Kubernetes manifests for the Backend, Frontend, Admin, and database.
+2. Configure Kubernetes Deployments and Services.
+3. Configure environment variables and Secrets.
+4. Configure persistent storage for the database where appropriate.
+5. Configure access to the frontend and Admin dashboard.
+6. Test the application inside Minikube.
+We will also organize the Kubernetes configuration so it can be managed consistently.
+
+Expected result: The e-commerce application runs on your local Kubernetes cluster.
+
+You will have experience with Pods, Deployments, Services, ConfigMaps, Secrets, and persistent storage before moving to AWS.
+5. Review and prepare the AWS infrastructure using Terraform
+Purpose: Build the cloud infrastructure needed for the production deployment.
+
+Your project already has Terraform files, but we need to review them against the capstone requirements. The existing Terraform configuration was previously identified as being oriented toward a single EC2 instance rather than a complete EKS deployment.
+What we will do
+- Review the existing Terraform configuration.
+- Identify which resources can be reused.
+- Plan the AWS networking and security architecture.
+- Provision the necessary VPC, subnets, and networking components.
+- Provision an Amazon EKS cluster and worker nodes.
+- Configure IAM roles and permissions.
+- Plan the required database infrastructure.
+We will use Terraform to manage infrastructure as code rather than relying on manually created resources.
+
+Expected result: The AWS infrastructure is defined and managed through Terraform.
+
+We will also consider cost controls so that resources are not left running unnecessarily.
+6. Resolve the database architecture before production deployment
+This is an important decision in your capstone project.
+
+Your current application uses MongoDB, but the capstone requirements we discussed specify Amazon RDS PostgreSQL and Flyway.
+
+These are different database technologies.
+Current application	Capstone requirement
+MongoDB	PostgreSQL
+MongoDB connection string	PostgreSQL connection configuration
+Mongoose models	PostgreSQL-compatible data-access implementation
+MongoDB database	Amazon RDS PostgreSQL
+No existing Flyway migration workflow identified	Database migrations using Flyway
+
+
+We should not simply replace MongoDB with PostgreSQL in a configuration file. The application code currently uses Mongoose, so meeting the PostgreSQL requirement would involve database-related application changes.
+
+Before implementing this stage, we need to decide whether to adapt the application to PostgreSQL or obtain approval to retain MongoDB. We should preserve the original application code as much as possible, but we also need to meet the actual capstone requirements.
+
+This decision affects the database setup, Kubernetes manifests, Terraform infrastructure, and deployment process.
+7. Deploy to Amazon EKS using Helm
+Purpose: Package and deploy the application to AWS Kubernetes.
+
+Once the AWS infrastructure is ready, we will prepare Helm charts to manage the application deployment.
+What we will do
+- Create or adapt Helm charts for the application.
+- Define configurable image names, replicas, ports, and environment settings.
+- Configure Kubernetes Services and other required resources.
+- Deploy the application to EKS.
+- Verify that the application works in AWS.
+We will design the configuration so that local and AWS deployments can use the same application images, with environment-specific values supplied separately.
+
+Expected result: The e-commerce application runs on EKS.
+8. Implement GitOps using Argo CD
+Purpose: Automate application deployment through Git.
+
+Instead of manually applying Kubernetes manifests every time a change is made, we will use Argo CD to monitor the Git repository and reconcile the cluster with the desired configuration.
+What we will do
+1. Organize the deployment configuration in Git.
+2. Connect Argo CD to the repository.
+3. Configure an Argo CD Application.
+4. Synchronize the application with the EKS cluster.
+5. Test how changes committed to Git are reflected in Kubernetes.
+Expected result: Git becomes the source of truth for the application's Kubernetes deployment configuration.
+
+You have already practised Helm and Argo CD with Minikube, so that experience will help here.
+9. Build the CI/CD pipeline using GitHub Actions
+Purpose: Automate the process of testing, building, and releasing application changes.
+
+We will create a pipeline that performs the appropriate checks whenever changes are pushed to GitHub.
+
+A typical workflow will be:
+1. A developer pushes code to GitHub.
+2. GitHub Actions runs the required checks.
+3. The application images are built.
+4. Images are published to Amazon ECR.
+5. The deployment configuration is updated.
+6. Argo CD deploys the approved changes to EKS.
+We will decide which deployment steps belong in GitHub Actions and which belong in Argo CD so that responsibilities are clear.
+
+Expected result: A repeatable deployment process with less manual intervention.
+10. Implement security controls
+Purpose: Protect the application, database, infrastructure, and deployment pipeline.
+
+The capstone requirements include several security practices.
+
+We will address:
+- IAM: Apply least-privilege permissions.
+- AWS Secrets Manager: Store sensitive application credentials securely.
+- Kubernetes Secrets: Supply required credentials to workloads.
+- Pod Security: Apply appropriate restrictions to running containers.
+- Network security: Restrict unnecessary access to application and database resources.
+- GitHub security: Prevent credentials and other sensitive information from entering the repository.
+We will also review any credentials previously exposed during development and rotate them if they are real and still active.
+
+Expected result: The deployment follows sensible security practices rather than merely being functional.
+11. Implement monitoring and observability
+Purpose: Understand what the application and infrastructure are doing after deployment.
+
+We will use the tools specified in the capstone requirements:
+Tool	Purpose
+Prometheus	Collect metrics
+Grafana	Display metrics in dashboards
+Loki	Collect and query logs
+
+
+We will configure appropriate metrics, dashboards, and log collection so that we can investigate application errors and monitor the health of the deployment.
+
+Expected result: We can observe the running application instead of relying only on manually checking Pods or reading container logs.
+12. Integrate SonarQube for code quality
+Purpose: Identify code-quality issues and potential problems before deployment.
+
+We will integrate SonarQube into the development workflow and configure the appropriate project checks.
+
+Depending on the final pipeline design, the checks can include code-quality analysis and a quality gate before an application release proceeds.
+
+Expected result: The project has an automated way to assess code quality.
+13. Implement Infracost and cost monitoring
+Purpose: Understand the estimated cost of AWS infrastructure before deploying changes.
+
+The capstone requirements include weekly Infracost checks.
+
+We will configure Infracost to estimate infrastructure costs from Terraform and incorporate those estimates into the workflow.
+
+We will also identify resources that should be stopped or destroyed when they are no longer needed for testing.
+
+Expected result: We can evaluate the potential cost of infrastructure changes before creating expensive AWS resources.
+14. Prepare the final project demonstration
+Purpose: Present the complete solution and demonstrate that the capstone requirements have been met.
+
+The planned demonstration is approximately 15 minutes.
+
+We will prepare a demonstration that covers:
+1. The project architecture.
+2. The application running locally.
+3. The Kubernetes deployment.
+4. Terraform-managed AWS infrastructure.
+5. The application running on EKS.
+6. GitHub Actions and Argo CD deployment automation.
+7. Security controls.
+8. Prometheus, Grafana, and Loki.
+9. SonarQube and Infracost.
+10. The overall deployment workflow.
+We will also prepare a simple architecture diagram and document the key commands and procedures so you can explain the project confidently.
+The complete roadmap at a glance
+Here is the intended sequence:
+Stage	Main activity	Status
+1	Containerize the MERN application and configure Docker Compose	Completed to the point of running all services
+2	Test the application and verify database functionality	Next
+3	Prepare environment-independent configuration	Planned
+4	Deploy the application to Minikube	Planned
+5	Review Terraform and prepare AWS infrastructure	Planned
+6	Decide on MongoDB versus PostgreSQL/Flyway	Decision required
+7	Deploy the application to EKS using Helm	Planned
+8	Configure GitOps using Argo CD	Planned
+9	Implement CI/CD with GitHub Actions	Planned
+10	Implement security controls	Planned
+11	Configure Prometheus, Grafana, and Loki	Planned
+12	Integrate SonarQube	Planned
+13	Configure Infracost and cost monitoring	Planned
+14	Prepare the final demonstration and documentation	Planned
+
+
+My recommendation
+The immediate next stage should be application validation, followed by environment configuration and Minikube deployment.
+
+We should not jump directly to AWS yet. Testing the application locally first will help us distinguish existing application problems from problems introduced by Kubernetes or AWS.
+
+There is also one architectural decision to settle before the database and production infrastructure stages: whether we will retain MongoDB or adapt the application to PostgreSQL and Flyway to meet the capstone requirements.
+
+For now, we can leave everything as it is. When you are ready, we can begin with Stage 2: Testing the complete application locally, proceeding step by step without changing files unnecessarily.
+
+
+
+To generate both secrets independently, you can run:
+printf "JWT_SECRET: "
+openssl rand -hex 32
+
+printf "JWT_REFRESH_SECRET: "
+openssl rand -hex 32
+
+Each command generates a 32-byte random value, represented as 64 hexadecimal characters.
+
+BILLcleff12345
+
+
+
+
+How to EXPLAIN  : Flyway during your project presentation
+You can use this explanation:
+
+"Flyway is a database migration tool that helps us manage and track changes to our PostgreSQL database structure. Instead of manually creating tables and indexes whenever we deploy our application, we write SQL migration files and allow Flyway to execute them in the correct order.
+
+In this project, our first migration is V1__create_audit_logs_table.sql. It creates the audit_logs table and its indexes. Flyway also maintains a flyway_schema_history table, which records the migrations that have been successfully executed.
+
+The Audit Service then uses the created table to store and retrieve audit events. Whenever we need to change the database structure in the future, we create another migration file, such as V2__add_status_column.sql, and Flyway applies it."
+One important presentation demonstration
+Show the examiner these two files:
+Audit-Service/
+├── migrations/
+│   └── V1__create_audit_logs_table.sql
+│
+└── scripts/
+    └── create-audit-record.js
+
+Explain that they serve different purposes:
+File	Purpose
+V1__create_audit_logs_table.sql	Creates the database table and indexes through Flyway.
+create-audit-record.js	Sends new audit events to the Audit Service API.
+
+
+Remember: You do not need to run Flyway every time you create an audit record. Flyway is for database structure changes, not ordinary record insertion.
+
+This separation is exactly what you want to demonstrate in your DevOps project.

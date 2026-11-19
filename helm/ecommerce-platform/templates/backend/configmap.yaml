@@ -1,0 +1,9 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: backend-config
+  namespace: {{ .Values.global.namespaces.backend }}
+data:
+  PORT: {{ .Values.backend.config.PORT | quote }}
+  NODE_ENV: {{ .Values.backend.config.NODE_ENV | quote }}
+  AUDIT_SERVICE_URL: {{ .Values.backend.config.AUDIT_SERVICE_URL | quote }}

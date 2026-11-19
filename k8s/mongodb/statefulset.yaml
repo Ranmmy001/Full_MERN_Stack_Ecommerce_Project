@@ -1,0 +1,63 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: mongodb
+spec:
+  serviceName: mongodb-service
+  replicas: 1
+
+  selector:
+    matchLabels:
+      app: mongodb
+
+  template:
+    metadata:
+      labels:
+        app: mongodb
+
+    spec:
+      containers:
+        - name: mongodb
+          image: mongo:7
+          imagePullPolicy: IfNotPresent
+
+          ports:
+            - name: mongodb
+              containerPort: 27017
+
+          envFrom:
+            - configMapRef:
+                name: mongodb-config
+
+          env:
+            - name: MONGO_INITDB_ROOT_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: mongodb-secret
+                  key: MONGO_INITDB_ROOT_USERNAME
+
+            - name: MONGO_INITDB_ROOT_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: mongodb-secret
+                  key: MONGO_INITDB_ROOT_PASSWORD
+
+          volumeMounts:
+            - name: mongodb-data
+              mountPath: /data/db ## This is the default data directory for MongoDB.
+
+          readinessProbe:  ## This is a probe that checks if the MongoDB container is ready to accept traffic.
+            tcpSocket:     ## This means that the probe will check if the TCP socket on port 27017 is open.
+              port: 27017
+            initialDelaySeconds: 10 ## This means that the readiness probe will start checking the container's readiness 10 seconds after the container has started.
+            periodSeconds: 10
+
+  volumeClaimTemplates:
+    - metadata:
+        name: mongodb-data  ## This is the name of the PersistentVolumeClaim that will be created for each replica of the StatefulSet.
+      spec:
+        accessModes:
+          - ReadWriteOnce ## This means that the volume can be mounted as read-write by a single node.
+        resources:
+          requests:
+            storage: 5Gi

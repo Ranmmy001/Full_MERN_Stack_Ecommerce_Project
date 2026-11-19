@@ -1,0 +1,108 @@
+services:   ## The list of all apps/programs that will be run idependently as a containerized service
+
+  # Existing MongoDB database
+  mongodb:
+    image: mongo:7
+    container_name: ecommerce-mongodb
+    restart: always
+    volumes:
+      - mongodb_data:/data/db
+
+  # Existing MERN Backend
+  backend:
+    build:
+      context: ./Backend
+      dockerfile: Dockerfile
+    ports:
+      - "5000:5000"
+    env_file:       ## Load the configuration from the .env file
+      - ./Backend/.env
+    environment:
+      PORT: "5000"
+      AUDIT_SERVICE_URL: http://audit-service:5001        ##Compose creates a private network where every service can reach the others by their service name. So audit-service automatically means “that other container.”
+    depends_on:
+      mongodb:
+        condition: service_started
+      audit-service:
+        condition: service_started
+    restart: always         ## if it crashes or server reboots, start it again
+
+  # Existing Frontend
+  frontend:
+    build:
+      context: ./Frontend
+      dockerfile: Dockerfile
+      args:
+        REACT_APP_API_URL: ${REACT_APP_API_URL:-http://localhost:5000}
+    ports:
+      - "3000:80"
+    env_file:
+      - ./Frontend/.env
+    depends_on:
+      - backend
+    restart: always
+
+  # Existing Admin Dashboard
+  admin:
+    build:
+      context: ./Admin
+      dockerfile: Dockerfile
+      args:
+        REACT_APP_API_URL: ${REACT_APP_API_URL:-http://localhost:5000}
+    ports:
+      - "3001:80"
+    env_file:
+      - ./Admin/.env
+    depends_on:
+      - backend
+    restart: always
+
+  # New PostgreSQL database for Audit Service that keeps the records of all the actions performed on the e-commerce platform
+  postgres:
+    image: postgres:16
+    container_name: ecommerce-audit-postgres
+    restart: always
+    environment:
+      POSTGRES_DB: ecommerce_audit
+      POSTGRES_USER: audit_user
+      POSTGRES_PASSWORD: audit_local_password
+    volumes:
+      - postgres_audit_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U audit_user -d ecommerce_audit"]
+      interval: 5s      ## Check every 5 seconds
+      timeout: 5s      ## If the check takes longer than 5 seconds, consider it a failure  
+      retries: 10         ## after 10 failed attempts, consider the service unhealthy
+
+  # New Flyway migration service, a tools that builds and updates the db schema for the Audit Service. It runs the migration scripts located in the migrations folder.
+  flyway:
+    image: flyway/flyway:11
+    container_name: ecommerce-audit-flyway
+    command: ["-configFiles=/flyway/conf/flyway.conf", "migrate"]         ## use the config file ./helm/templates/flyway.conf and run the migration scripts
+    volumes:
+      - ./Audit-Service/flyway.conf:/flyway/conf/flyway.conf:ro         ## :ro means read-only. The container can read but cannot change your files, which is safer.
+      - ./Audit-Service/migrations:/flyway/sql:ro               ## a bind mounts vol where flyway.conf holds the connection details. The migrations folder holds the SQL files.
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  # New Audit Service: a small app that records all the actions performed on the e-commerce platform. It connects to the PostgreSQL database and exposes an API for the backend to send audit logs.
+  audit-service:
+    build:
+      context: ./Audit-Service
+      dockerfile: Dockerfile
+    container_name: ecommerce-audit-service
+    ports:
+      - "5001:5001"
+    env_file:
+      - ./Audit-Service/.env
+    depends_on:
+      postgres:
+        condition: service_healthy
+      flyway:
+        condition: service_completed_successfully
+    restart: always
+
+volumes:
+  mongodb_data:
+  postgres_audit_data:

@@ -1,0 +1,24 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: flyway-migrations
+  namespace: {{ .Values.global.namespaces.postgres }}
+data:
+  V1__create_audit_logs_table.sql: |     
+    {{- .Files.Get "files/migrations/V1__create_audit_logs_table.sql" | nindent 4 }}  
+
+
+
+
+
+
+
+
+
+
+# Understand what this does
+# - kind: ConfigMap: creates a Kubernetes ConfigMap.
+# - name: flyway-migrations: gives the ConfigMap its name.
+# - namespace: places it in postgres-ns, where Flyway will run.
+# - .Files.Get: reads the SQL file packaged inside your Helm chart.
+# - nindent 4: formats the SQL correctly inside the YAML.

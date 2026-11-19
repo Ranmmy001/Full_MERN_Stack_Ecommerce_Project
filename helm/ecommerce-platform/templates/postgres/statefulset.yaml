@@ -1,0 +1,57 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: postgres
+  namespace: {{ .Values.global.namespaces.postgres }}
+spec:
+  serviceName: {{ .Values.postgres.service.name }}
+  replicas: {{ .Values.postgres.replicas }}
+  selector:
+    matchLabels:
+      app: postgres
+  template:
+    metadata:
+      labels:
+        app: postgres
+    spec:
+      containers:
+        - name: postgres
+          image: "{{ .Values.postgres.image.repository }}:{{ .Values.postgres.image.tag }}"
+          imagePullPolicy: {{ .Values.global.imagePullPolicy }}
+          ports:
+            - name: postgres
+              containerPort: 5432
+              protocol: TCP
+          env:
+            - name: POSTGRES_DB
+              value: {{ .Values.postgres.config.POSTGRES_DB | quote }}
+            - name: POSTGRES_USER
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.postgres.existingSecret }}
+                  key: POSTGRES_USER
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.postgres.existingSecret }}
+                  key: POSTGRES_PASSWORD
+          volumeMounts:
+            - name: postgres-data
+              mountPath: /var/lib/postgresql/data
+          readinessProbe:   ## purpose: This readiness probe checks if the PostgreSQL database is ready to accept connections. It uses the pg_isready command to verify the database's status, ensuring that the application only attempts to connect when the database is fully initialized and ready.
+            exec:
+              command:
+                - sh    ## purpose: This specifies that the command should be executed in a shell environment, allowing for the execution of shell commands and scripts.
+                - -c    ## purpose: This flag indicates that the following string should be executed as a command in the shell, enabling the use of shell features like variable expansion and command substitution.
+                - pg_isready -U "$POSTGRES_USER" -d "$POSTGRES_DB"   ## purpose: This command checks the readiness of the PostgreSQL database by attempting to connect using the specified user and database. It returns a success status if the database is ready, allowing Kubernetes to determine if the pod can receive traffic.
+            initialDelaySeconds: 10
+            periodSeconds: 10
+  volumeClaimTemplates:
+    - metadata:
+        name: postgres-data
+      spec:
+        accessModes:
+          - {{ .Values.postgres.persistence.accessMode }}
+        resources:
+          requests:
+            storage: {{ .Values.postgres.persistence.size }}

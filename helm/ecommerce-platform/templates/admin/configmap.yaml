@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: admin-config
+  namespace: {{ .Values.global.namespaces.admin }}
+data:
+  APP_ENV: {{ .Values.admin.config.APP_ENV | quote }}  ## important: This environment variable specifies the application environment (e.g., development, production) for the admin application. It allows for different configurations based on the environment, enabling better control over application behavior and settings. | quote is used to ensure that the value is treated as a string, preventing potential issues with special characters or formatting in the configuration.

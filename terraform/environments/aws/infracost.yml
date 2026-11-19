@@ -1,0 +1,31 @@
+version: 0.1
+
+projects:
+  - path: .
+    name: mern-ecommerce-aws
+    terraform_var_files:
+      - terraform.tfvars
+
+
+
+
+
+# Explanation
+# - version: Infracost configuration format.
+# - path: tells Infracost where your Terraform files are.
+# - name: identifies this project in cost reports.
+# - terraform_var_files: tells Infracost to include your AWS Terraform variables.
+# This configuration also makes it easier to reuse the same cost analysis in GitHub Actions later.
+
+
+# Step 4: Run your first cost estimate :
+# infracost scan
+
+# Step 5: Display the cost summary
+# After the scan completes, run:
+# infracost inspect --summary
+
+# To identify the most expensive resources:
+# infracost inspect --top 10
+
+# These commands will help us identify where we can reduce AWS costs without compromising your project requirements.
