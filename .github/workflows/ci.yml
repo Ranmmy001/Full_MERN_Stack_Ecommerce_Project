@@ -1,0 +1,103 @@
+name: MERN Ecommerce CI
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    name: Install dependencies and build applications
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 18
+
+      - name: Install Backend dependencies
+        working-directory: Backend
+        run: npm ci
+
+      - name: Install Frontend dependencies
+        working-directory: Frontend
+        run: npm ci
+
+      - name: Build Frontend
+        working-directory: Frontend
+        run: CI=false npm run build
+
+      - name: Install Admin dependencies
+        working-directory: Admin
+        run: npm ci
+
+      - name: Build Admin
+        working-directory: Admin
+        run: CI=false npm run build
+
+      - name: Set up Node.js for Audit Service
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install Audit Service dependencies
+        working-directory: Audit-Service
+        run: npm ci
+
+  docker-build:
+    name: Validate Docker images
+    runs-on: ubuntu-latest
+    needs: validate
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Build Backend image
+        run: docker build -t mern-ecommerce-backend:ci ./Backend
+
+      - name: Build Frontend image
+        run: |
+          docker build \
+            --build-arg REACT_APP_API_URL=http://localhost:5000 \
+            --build-arg VITE_API_URL=http://localhost:5000 \
+            -t mern-ecommerce-frontend:ci \
+            ./Frontend
+
+      - name: Build Admin image
+        run: |
+          docker build \
+            --build-arg REACT_APP_API_URL=http://localhost:5000 \
+            --build-arg VITE_API_URL=http://localhost:5000 \
+            -t mern-ecommerce-admin:ci \
+            ./Admin
+
+      - name: Build Audit Service image
+        run: docker build -t mern-ecommerce-audit-service:ci ./Audit-Service
+
+  helm-validation:
+    name: Validate Helm chart
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Helm
+        uses: azure/setup-helm@v4
+
+      - name: Lint Helm chart
+        run: helm lint ./helm/ecommerce-platform
+
+      - name: Validate Helm templates
+        run: helm template ecommerce-platform ./helm/ecommerce-platform

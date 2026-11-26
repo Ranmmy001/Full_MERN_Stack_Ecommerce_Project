@@ -1,9 +1,17 @@
 # ==========================================
-# AWS EKS ENVIRONMENT CONFIGURATION
+# GLOBAL  AND SHARED CONFIGURATION ACCROSS AWS AND MINIKUBE ENV
 # ==========================================
 
 global:
-  imagePullPolicy: IfNotPresent
+  namespaces:
+    frontend: frontend-ns
+    admin: admin-ns
+    backend: backend-ns
+    mongodb: mongodb-ns
+    audit: audit-ns
+    postgres: postgres-ns
+
+  imagePullPolicy: IfNotPresent   ## purpose: This policy ensures that the image is pulled only if it is not already present on the node, which can help reduce unnecessary network traffic and speed up deployments.
 
 
 # ==========================================
@@ -11,13 +19,22 @@ global:
 # ==========================================
 
 frontend:
+  enabled: true
+
+  replicas: 2   ## purpose: This specifies the number of instances (replicas) of the frontend service that should be running. Having multiple replicas can improve availability and load balancing.
+
   image:
-    repository: YOUR_AWS_ACCOUNT_ID.dkr.ecr.us-east-1.amazonaws.com/mern-ecommerce/frontend
+    repository: ghcr.io/ranmmy001/mern-ecommerce-frontend
     tag: latest
 
   service:
     type: ClusterIP
+    port: 80
+    targetPort: 80
     nodePort: null
+
+  config:
+    APP_ENV: kubernetes
 
 
 # ==========================================
@@ -25,13 +42,22 @@ frontend:
 # ==========================================
 
 admin:
+  enabled: true
+
+  replicas: 2
+
   image:
-    repository: YOUR_AWS_ACCOUNT_ID.dkr.ecr.us-east-1.amazonaws.com/mern-ecommerce/admin
+    repository: ghcr.io/ranmmy001/mern-ecommerce-admin
     tag: latest
 
   service:
     type: ClusterIP
+    port: 80
+    targetPort: 80
     nodePort: null
+
+  config:
+    APP_ENV: kubernetes
 
 
 # ==========================================
@@ -39,13 +65,54 @@ admin:
 # ==========================================
 
 backend:
+  enabled: true
+
+  replicas: 2
+
   image:
-    repository: YOUR_AWS_ACCOUNT_ID.dkr.ecr.us-east-1.amazonaws.com/mern-ecommerce/backend
+    repository: ghcr.io/ranmmy001/mern-ecommerce-backend
     tag: latest
 
   service:
     type: ClusterIP
+    port: 5000
+    targetPort: 5000
     nodePort: null
+
+  config:
+    PORT: "5000"
+    NODE_ENV: production
+    AUDIT_SERVICE_URL: http://audit-service.audit-ns.svc.cluster.local:5001
+
+  existingSecret: backend-secret  ## purpose: This secret is used to store sensitive information such as database credentials, API keys, and other secrets that the backend service needs to function properly. By using a Kubernetes secret, we can keep this information secure and separate from the application code.
+
+
+# ==========================================
+# MONGODB
+# ==========================================
+
+mongodb:
+  enabled: true
+
+  image:
+    repository: mongo
+    tag: "7"
+
+  replicas: 1
+
+  service:
+    name: mongodb-service
+    port: 27017
+
+  persistence:
+    enabled: true
+    size: 5Gi
+    accessMode: ReadWriteOnce
+
+  existingSecret: mongodb-secret
+
+  config:
+    MONGO_INITDB_DATABASE: ecommerce
 
 
 # ==========================================
@@ -53,26 +120,92 @@ backend:
 # ==========================================
 
 auditService:
+  enabled: true
+
   image:
-    repository: YOUR_AWS_ACCOUNT_ID.dkr.ecr.us-east-1.amazonaws.com/mern-ecommerce/audit-service
+    repository: ghcr.io/ranmmy001/mern-ecommerce-audit-service
     tag: latest
 
+  replicas: 1
+
+  service:
+    name: audit-service
+    type: ClusterIP
+    port: 5001
+    targetPort: 5001
+
+  config:
+    PORT: "5001"
+    DB_HOST: postgres-service.postgres-ns.svc.cluster.local
+    DB_PORT: "5432"
+    DB_NAME: ecommerce_audit
+
+  existingSecret: audit-service-secret
+
 
 # ==========================================
-# DATABASE IMAGES
+# POSTGRESQL
 # ==========================================
-
-mongodb:
-  image:
-    repository: mongo
-    tag: "7"
 
 postgres:
+  enabled: true
+
   image:
     repository: postgres
     tag: "16"
 
+  replicas: 1
+
+  service:
+    name: postgres-service
+    port: 5432
+
+  persistence:
+    enabled: true
+    size: 5Gi
+    accessMode: ReadWriteOnce  ## purpose: This access mode allows the volume to be mounted as read-write by a single node. It is suitable for databases like PostgreSQL where only one instance should write to the database at a time.
+
+  existingSecret: postgres-secret
+  config:
+    POSTGRES_DB: ecommerce_audit
+
+
+# ==========================================
+# FLYWAY
+# ==========================================
+
 flyway:
+  enabled: true   ## purpose: Flyway is a database migration tool that helps manage and version control database schema changes. It ensures that the database schema is consistent across different environments (development, testing, production) and allows for easy rollbacks if needed.
+
   image:
-    repository: flyway/flyway
+    repository: flyway/flyway   ## purpose: This is the official Flyway Docker image that contains the Flyway command-line tool and its dependencies, allowing you to run database migrations in a containerized environment.
     tag: "11"
+
+  migrationPath: /flyway/sql   ## purpose: This is the path inside the Flyway container where the SQL migration scripts are located. Flyway will look for migration scripts in this directory to apply them to the database.
+
+  config:
+    url: jdbc:postgresql://postgres-service.postgres-ns.svc.cluster.local:5432/ecommerce_audit
+    locations: filesystem:/flyway/sql
+
+
+# ==========================================
+# DATABASE SEED JOBS
+# ==========================================
+
+seedJobs:
+  enabled: true
+
+  color:
+    enabled: true
+    command:
+      - node
+      - seed/seed-colors.js
+
+  product:
+    enabled: true
+    command:
+      - /bin/sh
+      - -c
+      - |
+        node seed/add-sample-products.js &&
+        node seed/add-more-products.js
